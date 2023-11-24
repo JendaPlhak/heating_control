@@ -136,21 +136,45 @@ relay = Pin(RELAY_PIN, Pin.OUT)
 temp_one_wire = onewire.OneWire(Pin(DS18B20_PIN))
 
 
-def relay_control():
-    current_time = CETtime()
-    current_hour = current_time[3]
-    temp = read_ds18b20_temp(temp_one_wire)
+class TempMonitor:
+    def __init__(self):
+        self.high = -1.5
+        self.low = -3.0
+        self.is_low = False
 
-    # Switch the realy on if it's between 22:00 and 7:00 and
-    # the outside temperature is not too low
-    is_night = current_hour < 7 or current_hour >= 22
-    temp_not_low = temp is None or temp > -3
-    if is_night and temp_not_low:
-        print("on")
-        relay.value(1)
-    else:
-        print("off")
-        relay.value(0)
+    def low_temperature(self):
+        temp = read_ds18b20_temp(temp_one_wire)
+        if temp is None:
+            return self.is_low
+        if self.is_low:
+            if temp > self.high:
+                self.is_low = False
+        else:
+            if temp < self.low:
+                self.is_low = True
+        self.is_low
+
+
+class TimeMonitor:
+    def in_range(self):
+        current_time = CETtime()
+        month = current_time[1]
+        hour = current_time[3]
+        is_night = hour < 7 or hour >= 22
+        is_heating_season = month <= 5 or month >= 9
+        return is_night and is_heating_season
+
+
+def run_relay_control():
+    temp_mon = TempMonitor()
+    time_mon = TimeMonitor()
+    while True:
+        rtc.sync_time()
+        if time_mon.in_range() and not temp_mon.low_temperature():
+            relay.value(1)
+        else:
+            relay.value(0)
+        utime.sleep(60)
 
 
 if __name__ == "__main__":
@@ -158,7 +182,4 @@ if __name__ == "__main__":
     # save_current_UTC_time(rtc)
     rtc.sync_time()
 
-    while True:  # Main loop
-        read_time_tuple = rtc.read_time()
-        relay_control()
-        utime.sleep(60)
+    run_relay_control()
