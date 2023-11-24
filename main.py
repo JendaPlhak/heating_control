@@ -28,15 +28,6 @@ def tobytes(num):
 
 
 class ds3231(object):
-    weekday = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-    ]
     address = int(0x68)
     start_reg = int(0x00)
 
@@ -92,7 +83,7 @@ class ds3231(object):
 
 
 def CETtime():
-    year = utime.localtime()[0]  # get current year
+    year = utime.localtime()[0]
     HHMarch = utime.mktime(
         (year, 3, (31 - (int(5 * year / 4 + 4)) % 7), 1, 0, 0, 0, 0, 0)
     )  # Time of March change to CEST
