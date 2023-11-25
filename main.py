@@ -136,7 +136,7 @@ class TempMonitor:
     def low_temperature(self):
         temp = read_ds18b20_temp(temp_one_wire)
         if temp is None:
-            return self.is_low
+            return False
         if self.is_low:
             if temp > self.high:
                 self.is_low = False
